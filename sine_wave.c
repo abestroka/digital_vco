@@ -10,7 +10,7 @@ void generate_sine_wave() {
     }
 }
 
-void fill_audio_buffer(struct audio_buffer_pool *ap, uint32_t *pos, uint32_t step, uint8_t volume) {
+void play_sine_wave(struct audio_buffer_pool *ap, uint32_t *pos, uint32_t step, uint8_t volume) {
     struct audio_buffer *buffer = take_audio_buffer(ap, true);
     int16_t *samples = (int16_t *) buffer->buffer->bytes;
     uint32_t pos_max = 0x10000 * SINE_WAVE_TABLE_LEN;

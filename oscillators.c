@@ -60,6 +60,7 @@ void fill_audio_buffer(struct audio_buffer_pool *ap, uint32_t *pos, uint32_t ste
             wave_table = sine_wave_table; // Default to sine wave
             break;
     }
+    // attack_time = attack_rate * 
 
     for (uint32_t i = 0; i < buffer->max_sample_count; i++) {
         samples[i] = (volume * wave_table[*pos >> 16u]) >> 8u;

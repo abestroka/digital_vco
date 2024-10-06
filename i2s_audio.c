@@ -11,7 +11,9 @@
 struct audio_buffer_pool *init_audio() {
     static audio_format_t audio_format = {
         .format = AUDIO_BUFFER_FORMAT_PCM_S16,
-        .sample_freq = 24000,
+        // .sample_freq = 24000,
+        .sample_freq = 44100,
+
     };
 
     static struct audio_buffer_format producer_format = {

@@ -29,9 +29,15 @@ int main() {
 
     // Initialize I2S audio
     struct audio_buffer_pool *ap = init_audio();
+    uint32_t table_size = WAVE_TABLE_LEN;
 
+    float frequency = 440.0f; //Hz
+    uint32_t sample_rate = 44100; // sample rate hz
+
+    // Calculate step size based on frequency in Hz
+    uint32_t step = (uint32_t)((frequency * table_size * (1 << 16)) / sample_rate);
     // Step defines the frequency
-    uint32_t step = 0x200000;
+    // uint32_t step = 0x200000;
     uint32_t pos = 0;
     uint8_t volume = 50;
 

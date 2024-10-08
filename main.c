@@ -5,6 +5,8 @@
 
 #define BUTTON_PIN 15
 #define LED_PIN 25 
+#define FREQUENCY 440.0f
+
 
 
 int main() {
@@ -17,38 +19,45 @@ int main() {
     gpio_set_dir(BUTTON_PIN, GPIO_IN);
     gpio_pull_up(BUTTON_PIN);
 
-    // waveform_t waveform_type = WAVEFORM_SINE;
-    // waveform_t waveform_type = WAVEFORM_SQUARE;
-    // waveform_t waveform_type = WAVEFORM_SAW;
-    waveform_t waveform_type = WAVEFORM_TRIANGLE;
-
-
-    // Generate the sine wave lookup table
-    // generate_sine_wave();
-    generate_waveform(waveform_type);
 
     // Initialize I2S audio
-    struct audio_buffer_pool *ap = init_audio();
-    uint32_t table_size = WAVE_TABLE_LEN;
+    struct audio_buffer_pool *audio_pool = init_audio();
 
-    float frequency = 440.0f; //Hz
-    uint32_t sample_rate = 44100; // sample rate hz
+    // Generate all wave tables
+    generate_sine_wave_table();
+    generate_saw_wave_table();
+    generate_square_wave_table();
+    generate_triangle_wave_table();
 
-    // Calculate step size based on frequency in Hz
-    uint32_t step = (uint32_t)((frequency * table_size * (1 << 16)) / sample_rate);
-    // Step defines the frequency
-    // uint32_t step = 0x200000;
+    // Select which wave table to use (e.g., sine, saw, square, triangle)
+    float *current_wave_table = sine_wave_table; 
+
+    float phase_inc = (WAVE_TABLE_LEN * FREQUENCY) / SAMPLE_RATE;
+
     uint32_t pos = 0;
-    uint8_t volume = 50;
+    float volume = 0.2f;
 
     while (true) {
 
+
+
         if (gpio_get(BUTTON_PIN) == 0) {
             gpio_put(LED_PIN, 1); //LED on
-            fill_audio_buffer(ap, &pos, step, volume, waveform_type);
+            struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
+            int16_t *samples = (int16_t *) buffer->buffer->bytes;
+            // uint8_t volume2 = volume * 0.1;
+            fill_audio_buffer(current_wave_table, samples, &pos, phase_inc, volume, buffer->max_sample_count);
+            buffer->sample_count = buffer->max_sample_count;
+            give_audio_buffer(audio_pool, buffer);
         } else {
             gpio_put(LED_PIN, 0); // LED off
         }
+
+        // Fill the buffer with audio samples from the selected wave table
+        // fill_audio_buffer(current_wave_table, samples, &pos, phase_inc, volume, buffer->max_sample_count);
+
+        // buffer->sample_count = buffer->max_sample_count;
+        // give_audio_buffer(audio_pool, buffer);
 
         // sleep_ms(20);
 

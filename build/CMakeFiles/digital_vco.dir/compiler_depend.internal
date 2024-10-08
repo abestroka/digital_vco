@@ -4275,6 +4275,7 @@ CMakeFiles/digital_vco.dir/oscillators.c.obj
  /Library/DaisyToolchain/0.2.0/arm/lib/gcc/arm-none-eabi/10.3.1/include/stdint.h
  /Users/abestroka/audio_projects/pi/digital_vco/build/generated/pico_base/pico/config_autogen.h
  /Users/abestroka/audio_projects/pi/digital_vco/build/generated/pico_base/pico/version.h
+ /Users/abestroka/audio_projects/pi/digital_vco/i2s_audio.h
  /Users/abestroka/audio_projects/pi/digital_vco/oscillators.h
  /Users/abestroka/audio_projects/pi/pico/pico-extras/src/common/pico_audio/include/pico/audio.h
  /Users/abestroka/audio_projects/pi/pico/pico-extras/src/common/pico_util_buffer/include/pico/util/buffer.h

@@ -47,4 +47,5 @@ CMakeFiles/digital_vco.dir/oscillators.c.obj: \
  /Users/abestroka/audio_projects/pi/pico/pico-sdk/src/rp2_common/hardware_sync/include/hardware/sync.h \
  /Users/abestroka/audio_projects/pi/pico/pico-sdk/src/rp2_common/hardware_base/include/hardware/address_mapped.h \
  /Users/abestroka/audio_projects/pi/pico/pico-sdk/src/rp2_common/hardware_sync_spin_lock/include/hardware/sync/spin_lock.h \
- /Library/DaisyToolchain/0.2.0/arm/arm-none-eabi/include/math.h
+ /Library/DaisyToolchain/0.2.0/arm/arm-none-eabi/include/math.h \
+ /Users/abestroka/audio_projects/pi/digital_vco/i2s_audio.h

@@ -7,6 +7,15 @@
 #define LED_PIN 25 
 #define FREQUENCY 440.0f
 
+void play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos, float phase_inc, float volume) {
+    struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
+    int16_t *samples = (int16_t *) buffer->buffer->bytes;
+    // uint8_t volume2 = volume * 0.1;
+    fill_audio_buffer(wave_table, samples, pos, phase_inc, volume, buffer->max_sample_count);
+    buffer->sample_count = buffer->max_sample_count;
+    give_audio_buffer(audio_pool, buffer);
+}
+
 
 
 int main() {
@@ -39,16 +48,15 @@ int main() {
 
     while (true) {
 
-
-
         if (gpio_get(BUTTON_PIN) == 0) {
             gpio_put(LED_PIN, 1); //LED on
-            struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
-            int16_t *samples = (int16_t *) buffer->buffer->bytes;
-            // uint8_t volume2 = volume * 0.1;
-            fill_audio_buffer(current_wave_table, samples, &pos, phase_inc, volume, buffer->max_sample_count);
-            buffer->sample_count = buffer->max_sample_count;
-            give_audio_buffer(audio_pool, buffer);
+            // struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
+            // int16_t *samples = (int16_t *) buffer->buffer->bytes;
+            // // uint8_t volume2 = volume * 0.1;
+            // fill_audio_buffer(current_wave_table, samples, &pos, phase_inc, volume, buffer->max_sample_count);
+            // buffer->sample_count = buffer->max_sample_count;
+            // give_audio_buffer(audio_pool, buffer);
+            play(audio_pool, current_wave_table, &pos, phase_inc, volume);
         } else {
             gpio_put(LED_PIN, 0); // LED off
         }

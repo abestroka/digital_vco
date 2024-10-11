@@ -2,19 +2,27 @@
 #include "pico/stdlib.h"
 #include "i2s_audio.h"
 #include "oscillators.h"
+#include "envelope.h"
 
 #define BUTTON_PIN 15
 #define LED_PIN 25 
 #define FREQUENCY 440.0f
 
-void play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos, float phase_inc, float volume) {
+float attack_time = 0.1f;   
+float decay_time = 0.2f;    
+float sustain_level = 0.3f; 
+float release_time = 0.3f; 
+
+
+void play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos, float phase_inc, float volume, envelope_t *env) {
     struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
     int16_t *samples = (int16_t *) buffer->buffer->bytes;
     // uint8_t volume2 = volume * 0.1;
-    fill_audio_buffer(wave_table, samples, pos, phase_inc, volume, buffer->max_sample_count);
+    fill_audio_buffer(wave_table, samples, pos, phase_inc, volume, buffer->max_sample_count, env);
     buffer->sample_count = buffer->max_sample_count;
     give_audio_buffer(audio_pool, buffer);
 }
+
 
 
 
@@ -44,30 +52,30 @@ int main() {
     float phase_inc = (WAVE_TABLE_LEN * FREQUENCY) / SAMPLE_RATE;
 
     uint32_t pos = 0;
-    float volume = 0.2f;
+    float base_volume = 0.5f;
+
+    envelope_t env;
+    init_envelope(&env, 1.0f, 0.0f, 0.7f, 1.0f); //ADSR
 
     while (true) {
 
         if (gpio_get(BUTTON_PIN) == 0) {
             gpio_put(LED_PIN, 1); //LED on
-            // struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
-            // int16_t *samples = (int16_t *) buffer->buffer->bytes;
-            // // uint8_t volume2 = volume * 0.1;
-            // fill_audio_buffer(current_wave_table, samples, &pos, phase_inc, volume, buffer->max_sample_count);
-            // buffer->sample_count = buffer->max_sample_count;
-            // give_audio_buffer(audio_pool, buffer);
-            play(audio_pool, current_wave_table, &pos, phase_inc, volume);
+            if (env.state == OFF) {
+                env.state = ATTACK;
+            }
+            // play(audio_pool, current_wave_table, &pos, phase_inc, base_volume);
+            play(audio_pool, current_wave_table, &pos, phase_inc, base_volume, &env);
         } else {
             gpio_put(LED_PIN, 0); // LED off
+            if (env.state != OFF && env.state != RELEASE) {
+                env.state = RELEASE;  // Trigger release when the button is released
+            }
+            if (env.state != OFF) {
+                // play(audio_pool, current_wave_table, &pos, phase_inc, base_volume);
+                play(audio_pool, current_wave_table, &pos, phase_inc, base_volume, &env);
+            }
         }
-
-        // Fill the buffer with audio samples from the selected wave table
-        // fill_audio_buffer(current_wave_table, samples, &pos, phase_inc, volume, buffer->max_sample_count);
-
-        // buffer->sample_count = buffer->max_sample_count;
-        // give_audio_buffer(audio_pool, buffer);
-
-        // sleep_ms(20);
 
     }
 

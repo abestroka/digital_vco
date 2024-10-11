@@ -1,6 +1,7 @@
 #include "oscillators.h"
 #include <math.h>
 #include "i2s_audio.h"
+#include "envelope.h"
 
 float sine_wave_table[WAVE_TABLE_LEN];
 float saw_wave_table[WAVE_TABLE_LEN];
@@ -54,14 +55,18 @@ void generate_triangle_wave_table() {
 }
 
 // Fill audio buffer with samples from wave table
-void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, float phase_inc, float volume, int num_samples) {
+void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, float phase_inc, float volume, int num_samples, envelope_t *env) {
     for (int i = 0; i < num_samples; i++) {
+        // get envelope value
+        float env_value = process_envelope(env);
         // Get current sample from wave table using fractional indexing
         uint32_t index = (uint32_t)*pos;
         float sample = wave_table[index % WAVE_TABLE_LEN];
 
+        float curr_volume = volume * env_value;
+
         // Apply volume and convert to int16 range (-32768 to 32767)
-        samples[i] = (int16_t)(sample * volume * 32767.0f);
+        samples[i] = (int16_t)(sample * curr_volume * 32767.0f);
 
         // Increment phase and ensure it wraps around
         *pos += phase_inc;

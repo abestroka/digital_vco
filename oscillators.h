@@ -18,6 +18,5 @@ void generate_saw_wave_table();
 void generate_square_wave_table();
 void generate_triangle_wave_table();
 
-// Functions to generate different waveforms
 void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, float phase_inc, float volume, int num_samples, envelope_t *env);
 #endif // OSCILLATORS_H

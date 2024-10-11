@@ -49,4 +49,5 @@ CMakeFiles/digital_vco.dir/oscillators.c.obj: \
  /Users/abestroka/audio_projects/pi/pico/pico-sdk/src/rp2_common/hardware_sync_spin_lock/include/hardware/sync/spin_lock.h \
  /Users/abestroka/audio_projects/pi/digital_vco/envelope.h \
  /Library/DaisyToolchain/0.2.0/arm/arm-none-eabi/include/math.h \
- /Users/abestroka/audio_projects/pi/digital_vco/i2s_audio.h
+ /Users/abestroka/audio_projects/pi/digital_vco/i2s_audio.h \
+ /Users/abestroka/audio_projects/pi/digital_vco/filters.h

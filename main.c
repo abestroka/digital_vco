@@ -3,6 +3,7 @@
 #include "i2s_audio.h"
 #include "oscillators.h"
 #include "envelope.h"
+#include "filters.h"
 
 #define BUTTON_PIN 15
 #define LED_PIN 25 
@@ -37,16 +38,16 @@ int main() {
     gpio_pull_up(BUTTON_PIN);
 
 
-    // Initialize I2S audio
+    // Initialize I2S
     struct audio_buffer_pool *audio_pool = init_audio();
 
-    // Generate all wave tables
+    // generate all wave tables
     generate_sine_wave_table();
     generate_saw_wave_table();
     generate_square_wave_table();
     generate_triangle_wave_table();
 
-    // Select which wave table to use (e.g., sine, saw, square, triangle)
+    // choose wave table
     float *current_wave_table = sine_wave_table; 
 
     float phase_inc = (WAVE_TABLE_LEN * FREQUENCY) / SAMPLE_RATE;
@@ -60,19 +61,17 @@ int main() {
     while (true) {
 
         if (gpio_get(BUTTON_PIN) == 0) {
-            gpio_put(LED_PIN, 1); //LED on
+            gpio_put(LED_PIN, 1); 
             if (env.state == OFF) {
                 env.state = ATTACK;
             }
-            // play(audio_pool, current_wave_table, &pos, phase_inc, base_volume);
             play(audio_pool, current_wave_table, &pos, phase_inc, base_volume, &env);
         } else {
-            gpio_put(LED_PIN, 0); // LED off
+            gpio_put(LED_PIN, 0);
             if (env.state != OFF && env.state != RELEASE) {
-                env.state = RELEASE;  // Trigger release when the button is released
+                env.state = RELEASE; 
             }
             if (env.state != OFF) {
-                // play(audio_pool, current_wave_table, &pos, phase_inc, base_volume);
                 play(audio_pool, current_wave_table, &pos, phase_inc, base_volume, &env);
             }
         }

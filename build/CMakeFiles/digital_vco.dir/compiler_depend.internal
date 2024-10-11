@@ -4276,6 +4276,7 @@ CMakeFiles/digital_vco.dir/main.c.obj
  /Users/abestroka/audio_projects/pi/digital_vco/build/generated/pico_base/pico/config_autogen.h
  /Users/abestroka/audio_projects/pi/digital_vco/build/generated/pico_base/pico/version.h
  /Users/abestroka/audio_projects/pi/digital_vco/envelope.h
+ /Users/abestroka/audio_projects/pi/digital_vco/filters.h
  /Users/abestroka/audio_projects/pi/digital_vco/i2s_audio.h
  /Users/abestroka/audio_projects/pi/digital_vco/oscillators.h
  /Users/abestroka/audio_projects/pi/pico/pico-extras/src/common/pico_audio/include/pico/audio.h
@@ -4356,6 +4357,7 @@ CMakeFiles/digital_vco.dir/oscillators.c.obj
  /Users/abestroka/audio_projects/pi/digital_vco/build/generated/pico_base/pico/config_autogen.h
  /Users/abestroka/audio_projects/pi/digital_vco/build/generated/pico_base/pico/version.h
  /Users/abestroka/audio_projects/pi/digital_vco/envelope.h
+ /Users/abestroka/audio_projects/pi/digital_vco/filters.h
  /Users/abestroka/audio_projects/pi/digital_vco/i2s_audio.h
  /Users/abestroka/audio_projects/pi/digital_vco/oscillators.h
  /Users/abestroka/audio_projects/pi/pico/pico-extras/src/common/pico_audio/include/pico/audio.h

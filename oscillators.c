@@ -60,8 +60,7 @@ void generate_triangle_wave_table() {
 
 // fill audio buffer with samples from wave table
 void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, float phase_inc, float volume, int num_samples, envelope_t *env) {
-    filter_t lowpass_filter;
-    init_filter(&lowpass_filter, 1000.0f, 0.7f, SAMPLE_RATE);
+
     for (int i = 0; i < num_samples; i++) {
         // get envelope value
         float env_value = process_envelope(env);
@@ -69,12 +68,10 @@ void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, float
         uint32_t index = (uint32_t)*pos;
         float sample = wave_table[index % WAVE_TABLE_LEN];
 
-        float filtered_sample = apply_lowpass(&lowpass_filter, sample);
-
         float curr_volume = volume * env_value;
 
         // volume in int16 range -32768 to 32767
-        samples[i] = (int16_t)(filtered_sample * curr_volume * 32767.0f);
+        samples[i] = (int16_t)(sample * curr_volume * 32767.0f);
 
         // next phase
         *pos += phase_inc;

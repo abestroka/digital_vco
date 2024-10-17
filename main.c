@@ -5,6 +5,11 @@
 #include "envelope.h"
 #include "filters.h"
 
+#include "hardware/adc.h"
+
+#define ADC_PIN 26 
+#define MAX_ADC_VALUE 4095.0f 
+
 #define BUTTON_PIN 15
 #define LED_PIN 25 
 #define FREQUENCY 440.0f
@@ -13,6 +18,13 @@ float attack_time = 0.1f;
 float decay_time = 0.2f;    
 float sustain_level = 0.3f; 
 float release_time = 0.3f; 
+
+
+float read_potentiometer() {
+    uint16_t result = adc_read();  //read ADC value (0-4095)
+    return (result / MAX_ADC_VALUE);  // 0 - 1
+    sleep_ms(10);
+}
 
 
 void play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos, float phase_inc, float volume, envelope_t *env) {
@@ -25,8 +37,6 @@ void play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos
 }
 
 
-
-
 int main() {
     stdio_init_all();
 
@@ -36,6 +46,10 @@ int main() {
     gpio_init(BUTTON_PIN);
     gpio_set_dir(BUTTON_PIN, GPIO_IN);
     gpio_pull_up(BUTTON_PIN);
+
+    adc_init();
+    adc_gpio_init(ADC_PIN);  
+    adc_select_input(0); 
 
 
     // Initialize I2S
@@ -53,12 +67,20 @@ int main() {
     float phase_inc = (WAVE_TABLE_LEN * FREQUENCY) / SAMPLE_RATE;
 
     uint32_t pos = 0;
-    float base_volume = 0.5f;
+    // float base_volume = 0.5f;
 
     envelope_t env;
-    init_envelope(&env, 1.0f, 0.0f, 0.7f, 1.0f); //ADSR
+    init_envelope(&env, 1.0f, 0.01f, 1.0f, 1.0f); //ADSR
+
+    static float smoothed_volume = 0;
+    float alpha = 0.1; // Smoothing factor (0 < alpha < 1)
+    
 
     while (true) {
+        float volume = read_potentiometer();
+        // volume = volume * base_volume;
+        smoothed_volume = alpha * volume + (1 - alpha) * smoothed_volume;
+        float base_volume = smoothed_volume;
 
         if (gpio_get(BUTTON_PIN) == 0) {
             gpio_put(LED_PIN, 1); 
@@ -75,6 +97,8 @@ int main() {
                 play(audio_pool, current_wave_table, &pos, phase_inc, base_volume, &env);
             }
         }
+
+        // sleep_ms(10);
 
     }
 

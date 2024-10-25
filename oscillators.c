@@ -53,45 +53,7 @@ static float dlyin2 = 0.0f;
 static float dlyout1 = 0.0f;
 static float dlyout2 = 0.0f;
 
-void init_lowpass(float cutoff, float *ampin0, float *ampin1, float *ampin2, float *ampout1, float *ampout2) {
-    float sqr2 = 1.414213562;
-    float c = 1 / tanf((M_PI / SAMPLE_RATE) * cutoff);
-    float c2 = c * c;
-    float csqr2 = sqr2 * c;
-    float d = (c2 + csqr2 + 1);
-    
-    *ampin0 = 1 / d;
-    *ampin1 = *ampin0 + *ampin0;
-    *ampin2 = *ampin0;
-    *ampout1 = (2 * (1 - c2)) / d;
-    *ampout2 = (c2 - csqr2 + 1) / d;
-}
 
-void init_highpass(float cutoff, float *ampin0, float *ampin1, float *ampin2, float *ampout1, float *ampout2) {
-    float sqr2 = 1.414213562;
-    float c = tanf((M_PI / SAMPLE_RATE) * cutoff);
-    float c2 = c * c;
-    float csqr2 = sqr2 * c;
-    float d = (c2 + csqr2 + 1);
-    
-    *ampin0 = 1 / d;
-    *ampin1 = -(*ampin0 + *ampin0);
-    *ampin2 = *ampin0;
-    *ampout1 = (2 * (c2 - 1)) / d;
-    *ampout2 = (1 - csqr2 + c2) / d;
-}
-
-void init_bandpass(float cutoff, float *ampin0, float *ampin1, float *ampin2, float *ampout1, float *ampout2) {
-    float sqr2 = 1.414213562;
-    float c = 1 / tanf((M_PI / SAMPLE_RATE) * cutoff);
-    float d = 1 + c;
-    
-    *ampin0 = 1 / d;
-    *ampin1 = 0;
-    *ampin2 = -(*ampin0);
-    *ampout1 = (-c*2*cosf((2*M_PI)*cutoff/SAMPLE_RATE)) / d;
-    *ampout2 = (c - 1) / d;
-}
 
 // fill audio buffer with samples from wave table
 void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, float phase_inc, float volume, int num_samples, envelope_t *env, float ampin0, float ampin1, float ampin2, float ampout1, float ampout2) {

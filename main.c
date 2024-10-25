@@ -3,6 +3,7 @@
 #include "i2s_audio.h"
 #include "oscillators.h"
 #include "envelope.h"
+#include "filters.h"
 
 #include "hardware/adc.h"
 
@@ -64,10 +65,9 @@ int main() {
     float phase_inc = (WAVE_TABLE_LEN * FREQUENCY) / SAMPLE_RATE;
 
     uint32_t pos = 0;
-    // float base_volume = 0.5f;
 
     envelope_t env;
-    init_envelope(&env,0.01f, 0.01f, 1.0f, 0.01f); //ADSR
+    init_envelope(&env, 0.01f, 0.01f, 1.0f, 0.01f); //ADSR
 
     // float min_volume = 0.0f;
     // float max_volume = 1.0f;    
@@ -77,7 +77,7 @@ int main() {
     // float prev_adc_value = 0;
 
     float min_cutoff = 0.0f;
-    float max_cutoff = 1000.0f;
+    float max_cutoff = FREQUENCY;
 
     static float smoothed_cutoff = 0;
     float alpha = 0.1;
@@ -106,13 +106,8 @@ int main() {
         smoothed_cutoff = alpha * pot_cutoff + (1 - alpha) * smoothed_cutoff;
         float base_cutoff = smoothed_cutoff;
         float cutoff_freq_p = base_cutoff;
-        // if (cutoff_freq_p < 0.01f) {
-        //     cutoff_freq_p = 0.0f;
-        // } else {
-        //     cutoff_freq_p = cutoff_freq_p * cutoff_freq_p;
-        // }
         float cutoff_freq = cutoff_freq_p * max_cutoff;
-        init_bandpass(cutoff_freq, &ampin0, &ampin1, &ampin2, &ampout1, &ampout2);
+        init_lowpass(cutoff_freq, &ampin0, &ampin1, &ampin2, &ampout1, &ampout2);
 
 
 

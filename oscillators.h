@@ -18,7 +18,9 @@ void generate_saw_wave_table();
 void generate_square_wave_table();
 void generate_triangle_wave_table();
 
-void calculate_filter_coefficients(float cutoff_freq, float *ampin0, float *ampin1, float *ampin2, float *ampout1, float *ampout2);
+void init_lowpass(float cutoff_freq, float *ampin0, float *ampin1, float *ampin2, float *ampout1, float *ampout2);
+void init_highpass(float cutoff_freq, float *ampin0, float *ampin1, float *ampin2, float *ampout1, float *ampout2);
+void init_bandpass(float cutoff_freq, float *ampin0, float *ampin1, float *ampin2, float *ampout1, float *ampout2);
 
 
 void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, float phase_inc, float volume, int num_samples, envelope_t *env, float ampin0, float ampin1, float ampin2, float ampout1, float ampout2);

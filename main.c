@@ -13,10 +13,6 @@
 #define LED_PIN 25 
 #define FREQUENCY 440.0f
 
-float attack_time = 0.1f;   
-float decay_time = 0.2f;    
-float sustain_level = 0.3f; 
-float release_time = 0.3f;
 
 float ampin0, ampin1, ampin2, ampout1, ampout2;
 
@@ -71,7 +67,7 @@ int main() {
     // float base_volume = 0.5f;
 
     envelope_t env;
-    init_envelope(&env, 1.0f, 0.01f, 1.0f, 1.0f); //ADSR
+    init_envelope(&env,0.01f, 0.01f, 1.0f, 0.01f); //ADSR
 
     // float min_volume = 0.0f;
     // float max_volume = 1.0f;    
@@ -116,7 +112,7 @@ int main() {
         //     cutoff_freq_p = cutoff_freq_p * cutoff_freq_p;
         // }
         float cutoff_freq = cutoff_freq_p * max_cutoff;
-        calculate_filter_coefficients(cutoff_freq, &ampin0, &ampin1, &ampin2, &ampout1, &ampout2);
+        init_bandpass(cutoff_freq, &ampin0, &ampin1, &ampin2, &ampout1, &ampout2);
 
 
 
@@ -135,8 +131,6 @@ int main() {
                 play(audio_pool, current_wave_table, &pos, phase_inc, volume, &env, ampin0, ampin1, ampin2, ampout1, ampout2);
             }
         }
-
-        // sleep_ms(10);
 
     }
 

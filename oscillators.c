@@ -2,10 +2,13 @@
 #include <math.h>
 #include "i2s_audio.h"
 #include "envelope.h"
+#include <time.h>
+
 float sine_wave_table[WAVE_TABLE_LEN];
 float saw_wave_table[WAVE_TABLE_LEN];
 float square_wave_table[WAVE_TABLE_LEN];
 float triangle_wave_table[WAVE_TABLE_LEN];
+float white_noise_table[WAVE_TABLE_LEN];
 
 
 // variables to track envelope progress
@@ -45,6 +48,13 @@ void generate_triangle_wave_table() {
         } else {
             triangle_wave_table[i] = 3.0f - 4.0f * (float)i / WAVE_TABLE_LEN;
         }
+    }
+}
+
+void generate_white_noise_table() {
+    srand(time(NULL));
+    for (int i = 0; i < WAVE_TABLE_LEN; i++) {
+        white_noise_table[i] = (float)rand() / (float)(RAND_MAX / 2.0f) - 1.0f;
     }
 }
 

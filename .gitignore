@@ -1,0 +1,52 @@
+# Ignore build directories
+build/
+*/build/
+
+# Ignore object files, executables, and libraries
+*.o
+*.obj
+*.so
+*.a
+*.dylib
+*.dll
+*.exe
+
+# Ignore CMake files
+CMakeFiles/
+CMakeCache.txt
+cmake_install.cmake
+Makefile
+
+# Ignore compiled dynamic libraries
+*.dll
+*.dylib
+*.so
+
+# Ignore generated documentation
+/docs/doxygen/
+
+# Ignore log and debug files
+*.log
+*.dbg
+
+# Ignore system files (MacOS)
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+
+# Ignore system files (Windows)
+Thumbs.db
+Desktop.ini
+
+# Ignore IDE-specific files
+.idea/
+.vscode/
+*.code-workspace
+*.sublime-*
+
+# Ignore temporary files and swap files
+*.swp
+*.tmp
+*.bak
+~$*

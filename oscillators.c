@@ -58,37 +58,36 @@ void generate_white_noise_table() {
     }
 }
 
-static float dlyin1 = 0.0f;
-static float dlyin2 = 0.0f;
-static float dlyout1 = 0.0f;
-static float dlyout2 = 0.0f;
 
 
 
-// fill audio buffer with samples from wave table
-void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, float phase_inc, float volume, int num_samples, envelope_t *env, float ampin0, float ampin1, float ampin2, float ampout1, float ampout2) {
+void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, 
+                      float phase_inc, float volume, int num_samples, 
+                      envelope_t *env, float ampin0, float ampin1, float ampin2, 
+                      float ampout1, float ampout2, filter_state_t *filter_state) {
     for (int i = 0; i < num_samples; i++) {
-        // get envelope value
         float env_value = process_envelope(env);
-        // get curent sample
         uint32_t index = (uint32_t)*pos;
         float sample = wave_table[index % WAVE_TABLE_LEN];
 
         float curr_volume = volume * env_value;
 
-        float filtered_sample = (ampin0 * sample) + (ampin1 * dlyin1) + (ampin2 * dlyin2) - (ampout1 * dlyout1) - (ampout2 * dlyout2);
+        float filtered_sample = (ampin0 * sample) + 
+                              (ampin1 * filter_state->dlyin1) + 
+                              (ampin2 * filter_state->dlyin2) - 
+                              (ampout1 * filter_state->dlyout1) - 
+                              (ampout2 * filter_state->dlyout2);
 
-        // volume in int16 range -32768 to 32767
-        // samples[i] = (int16_t)(sample * curr_volume * 32767.0f);
+        // Apply mixing scaling to prevent clipping
+        // filtered_sample *= 0.5f; 
+
         samples[i] = (int16_t)(filtered_sample * curr_volume * 32767.0f);
 
-        dlyout2 = dlyout1;
-        dlyout1 = filtered_sample;
-        dlyin2 = dlyin1;
-        dlyin1 = sample;
+        filter_state->dlyout2 = filter_state->dlyout1;
+        filter_state->dlyout1 = filtered_sample;
+        filter_state->dlyin2 = filter_state->dlyin1;
+        filter_state->dlyin1 = sample;
 
-
-        // next phase
         *pos += phase_inc;
         if (*pos >= WAVE_TABLE_LEN) {
             *pos -= WAVE_TABLE_LEN;

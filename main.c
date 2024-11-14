@@ -38,18 +38,34 @@ float read_volume() {
 
 
 
-void play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos, 
+// void play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos, 
+//           float phase_inc, float volume, envelope_t *env, 
+//           float ampin0, float ampin1, float ampin2, float ampout1, float ampout2,
+//           filter_state_t *filter_state) {
+//     struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
+//     int16_t *samples = (int16_t *) buffer->buffer->bytes;
+//     fill_audio_buffer(wave_table, samples, pos, phase_inc, volume, 
+//                      buffer->max_sample_count, env, 
+//                      ampin0, ampin1, ampin2, ampout1, ampout2,
+//                      filter_state);
+//     buffer->sample_count = buffer->max_sample_count;
+//     give_audio_buffer(audio_pool, buffer);
+// }
+
+struct audio_buffer * play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos, 
           float phase_inc, float volume, envelope_t *env, 
           float ampin0, float ampin1, float ampin2, float ampout1, float ampout2,
           filter_state_t *filter_state) {
     struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
+    if (buffer == NULL) return NULL;
     int16_t *samples = (int16_t *) buffer->buffer->bytes;
     fill_audio_buffer(wave_table, samples, pos, phase_inc, volume, 
                      buffer->max_sample_count, env, 
                      ampin0, ampin1, ampin2, ampout1, ampout2,
                      filter_state);
     buffer->sample_count = buffer->max_sample_count;
-    give_audio_buffer(audio_pool, buffer);
+    // give_audio_buffer(audio_pool, buffer);
+    return buffer;
 }
 
 
@@ -100,6 +116,14 @@ int main() {
     filter_state_t filter_state1 = {0};
     filter_state_t filter_state2 = {0}; 
 
+    struct audio_buffer *active_buffer = NULL;
+
+    struct audio_buffer *buffer_1;
+    struct audio_buffer *buffer_2;
+    // struct audio_buffer *buffer_3;
+
+    int num_voices = 0;
+
     float min_volume = 0.0f;
     float max_volume = 1.0f;    
     static float smoothed_volume = 0;
@@ -138,14 +162,24 @@ int main() {
         init_lowpass(cutoff_freq, &ampin0, &ampin1, &ampin2, &ampout1, &ampout2);
 
 
-
+        if (active_buffer != NULL && env1.state == OFF) {
+            give_audio_buffer(audio_pool, active_buffer);
+            active_buffer = NULL;
+        }
         if (gpio_get(BUTTON_PIN_1) == 0) {
-            gpio_put(LED_PIN, 1); 
+            gpio_put(LED_PIN, 1);
             if (env1.state == OFF) {
                 env1.state = ATTACK;
             }
-            play(audio_pool, current_wave_table1, &pos1, phase_inc, volume, &env1, 
+            struct audio_buffer *new_buffer = play(audio_pool, current_wave_table1, &pos1, phase_inc, volume, &env1, 
      ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state1);
+            // give_audio_buffer(audio_pool, buffer_1);
+            if (new_buffer != NULL) {
+                if (active_buffer != NULL) {
+                    give_audio_buffer(audio_pool, active_buffer);
+                }
+                active_buffer = new_buffer;
+            }
 
         } else if (gpio_get(BUTTON_PIN_1) == 1) {
             gpio_put(LED_PIN, 0);
@@ -153,32 +187,47 @@ int main() {
                 env1.state = RELEASE; 
             }
             if (env1.state != OFF) {
-                play(audio_pool, current_wave_table1, &pos1, phase_inc, volume, &env1, 
+                struct audio_buffer *new_buffer = play(audio_pool, current_wave_table1, &pos1, phase_inc, volume, &env1, 
      ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state1);
+            // give_audio_buffer(audio_pool, buffer_1);
+
+                if (new_buffer != NULL) {
+                    if (active_buffer != NULL) {
+                        give_audio_buffer(audio_pool, active_buffer);
+                    }
+                    active_buffer = new_buffer;
+                }
+
 
             }
         }
 
 
-        if (gpio_get(BUTTON_PIN_2) == 0) {
-            gpio_put(LED_PIN, 1); 
-            if (env2.state == OFF) {
-                env2.state = ATTACK;
-            }
-            play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
-     ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
-        } else if (gpio_get(BUTTON_PIN_2) == 1) {
-            gpio_put(LED_PIN, 0);
-            if (env2.state != OFF && env2.state != RELEASE) {
-                env2.state = RELEASE; 
-            }
-            if (env2.state != OFF) {
-                play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
-     ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
-            }
+    //     if (gpio_get(BUTTON_PIN_2) == 0) {
+    //         gpio_put(LED_PIN, 1); 
+    //         if (env2.state == OFF) {
+    //             env2.state = ATTACK;
+    //         }
+    //         buffer_2 = play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
+    //  ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
+    //         give_audio_buffer(audio_pool, buffer_2);
+    //     } else if (gpio_get(BUTTON_PIN_2) == 1) {
+    //         gpio_put(LED_PIN, 0);
+    //         if (env2.state != OFF && env2.state != RELEASE) {
+    //             env2.state = RELEASE; 
+    //         }
+    //         if (env2.state != OFF) {
+    //             buffer_2 = play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
+    //  ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
+    //             give_audio_buffer(audio_pool, buffer_2);
+    //         }
+    //     }
+
+        if (active_buffer != NULL) {
+            give_audio_buffer(audio_pool, active_buffer);
+            active_buffer = NULL;
         }
 
-        
 
     }
 

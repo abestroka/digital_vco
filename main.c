@@ -117,6 +117,7 @@ int main() {
     filter_state_t filter_state2 = {0}; 
 
     struct audio_buffer *active_buffer = NULL;
+    struct audio_buffer *active_buffer2 = NULL;
 
     struct audio_buffer *buffer_1;
     struct audio_buffer *buffer_2;
@@ -201,32 +202,55 @@ int main() {
 
             }
         }
-
-
-    //     if (gpio_get(BUTTON_PIN_2) == 0) {
-    //         gpio_put(LED_PIN, 1); 
-    //         if (env2.state == OFF) {
-    //             env2.state = ATTACK;
-    //         }
-    //         buffer_2 = play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
-    //  ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
-    //         give_audio_buffer(audio_pool, buffer_2);
-    //     } else if (gpio_get(BUTTON_PIN_2) == 1) {
-    //         gpio_put(LED_PIN, 0);
-    //         if (env2.state != OFF && env2.state != RELEASE) {
-    //             env2.state = RELEASE; 
-    //         }
-    //         if (env2.state != OFF) {
-    //             buffer_2 = play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
-    //  ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
-    //             give_audio_buffer(audio_pool, buffer_2);
-    //         }
-    //     }
+        if (active_buffer2 != NULL && env2.state == OFF) {
+            give_audio_buffer(audio_pool, active_buffer2);
+            active_buffer2 = NULL;
+        }
+        if (gpio_get(BUTTON_PIN_2) == 0) {
+            gpio_put(LED_PIN, 1); 
+            if (env2.state == OFF) {
+                env2.state = ATTACK;
+            }
+            struct audio_buffer *new_buffer2 = play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
+     ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
+            // give_audio_buffer(audio_pool, buffer_2);
+            if (new_buffer2 != NULL) {
+                if (active_buffer2 != NULL) {
+                    give_audio_buffer(audio_pool, active_buffer2);
+                }
+                active_buffer2 = new_buffer2;
+            }
+        } else if (gpio_get(BUTTON_PIN_2) == 1) {
+            gpio_put(LED_PIN, 0);
+            if (env2.state != OFF && env2.state != RELEASE) {
+                env2.state = RELEASE; 
+            }
+            if (env2.state != OFF) {
+                struct audio_buffer *new_buffer2 = play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
+     ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
+                // give_audio_buffer(audio_pool, buffer_2);
+                if (new_buffer2 != NULL) {
+                    if (active_buffer2 != NULL) {
+                        give_audio_buffer(audio_pool, active_buffer2);
+                    }
+                    active_buffer2 = new_buffer2;
+            }
+            }
+        }
 
         if (active_buffer != NULL) {
             give_audio_buffer(audio_pool, active_buffer);
             active_buffer = NULL;
         }
+        if (active_buffer2 != NULL) {
+            give_audio_buffer(audio_pool, active_buffer2);
+            active_buffer2 = NULL;
+        }
+
+        // if (active_buffer != NULL && active_buffer2 != NULL) {
+            
+        // }
+
 
 
     }

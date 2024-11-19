@@ -11,10 +11,6 @@ float triangle_wave_table[WAVE_TABLE_LEN];
 float white_noise_table[WAVE_TABLE_LEN];
 
 
-// variables to track envelope progress
-static uint32_t envelope_pos = 0;  // current envelope index
-
-
 // sine wave table
 void generate_sine_wave_table() {
     for (int i = 0; i < WAVE_TABLE_LEN; i++) {
@@ -58,13 +54,10 @@ void generate_white_noise_table() {
     }
 }
 
-
-
-
 void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos, 
-                      float phase_inc, float volume, int num_samples, 
-                      envelope_t *env, float ampin0, float ampin1, float ampin2, 
-                      float ampout1, float ampout2, filter_state_t *filter_state) {
+                       float phase_inc, float volume, int num_samples, 
+                       envelope_t *env, float ampin0, float ampin1, float ampin2, 
+                       float ampout1, float ampout2, filter_state_t *filter_state) {
     for (int i = 0; i < num_samples; i++) {
         float env_value = process_envelope(env);
         uint32_t index = (uint32_t)*pos;
@@ -78,10 +71,9 @@ void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos,
                               (ampout1 * filter_state->dlyout1) - 
                               (ampout2 * filter_state->dlyout2);
 
-        // Apply mixing scaling to prevent clipping
-        // filtered_sample *= 0.5f; 
-
-        samples[i] = (int16_t)(filtered_sample * curr_volume * 32767.0f);
+        // mix current sample into buffer
+        int16_t mixed_sample = (int16_t)(filtered_sample * curr_volume * 32767.0f/2.0f);
+        samples[i] += mixed_sample;
 
         filter_state->dlyout2 = filter_state->dlyout1;
         filter_state->dlyout1 = filtered_sample;
@@ -94,5 +86,4 @@ void fill_audio_buffer(float *wave_table, int16_t *samples, uint32_t *pos,
         }
     }
 }
-
 

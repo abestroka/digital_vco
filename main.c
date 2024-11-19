@@ -21,6 +21,16 @@
 
 float ampin0, ampin1, ampin2, ampout1, ampout2;
 
+typedef struct {
+    float *wave_table;
+    uint32_t *pos;
+    float phase_inc;
+    float volume;
+    envelope_t env;
+    filter_state_t *filter_state;
+    bool is_active;
+} voice;
+
 
 float read_cutoff() {
     adc_select_input(CUTOFF_ADC_CHANNEL);
@@ -36,36 +46,27 @@ float read_volume() {
     sleep_ms(10);
 }
 
-
-
-// void play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos, 
-//           float phase_inc, float volume, envelope_t *env, 
-//           float ampin0, float ampin1, float ampin2, float ampout1, float ampout2,
-//           filter_state_t *filter_state) {
-//     struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
-//     int16_t *samples = (int16_t *) buffer->buffer->bytes;
-//     fill_audio_buffer(wave_table, samples, pos, phase_inc, volume, 
-//                      buffer->max_sample_count, env, 
-//                      ampin0, ampin1, ampin2, ampout1, ampout2,
-//                      filter_state);
-//     buffer->sample_count = buffer->max_sample_count;
-//     give_audio_buffer(audio_pool, buffer);
-// }
-
-struct audio_buffer * play(struct audio_buffer_pool *audio_pool, float *wave_table, uint32_t *pos, 
-          float phase_inc, float volume, envelope_t *env, 
-          float ampin0, float ampin1, float ampin2, float ampout1, float ampout2,
-          filter_state_t *filter_state) {
+void play(struct audio_buffer_pool *audio_pool, voice **voices, int num_voices, 
+          float ampin0, float ampin1, float ampin2, float ampout1, float ampout2) {
     struct audio_buffer *buffer = take_audio_buffer(audio_pool, true);
-    if (buffer == NULL) return NULL;
     int16_t *samples = (int16_t *) buffer->buffer->bytes;
-    fill_audio_buffer(wave_table, samples, pos, phase_inc, volume, 
-                     buffer->max_sample_count, env, 
-                     ampin0, ampin1, ampin2, ampout1, ampout2,
-                     filter_state);
+
+    // clear buffer
+    for (int i = 0; i < buffer->max_sample_count; i++) {
+        samples[i] = 0;
+    }
+
+    // loop through all active voices and fill buffer
+    for (int v = 0; v < num_voices; v++) {
+        if (voices[v]->is_active == true) {
+            fill_audio_buffer(voices[v]->wave_table, samples, voices[v]->pos, voices[v]->phase_inc, 
+                            voices[v]->volume, buffer->max_sample_count, &voices[v]->env, 
+                            ampin0, ampin1, ampin2, ampout1, ampout2, voices[v]->filter_state);
+        }
+    }
+
     buffer->sample_count = buffer->max_sample_count;
-    // give_audio_buffer(audio_pool, buffer);
-    return buffer;
+    give_audio_buffer(audio_pool, buffer);
 }
 
 
@@ -99,37 +100,39 @@ int main() {
     generate_triangle_wave_table();
     generate_white_noise_table();
 
-    // choose wave table
-    float *current_wave_table1 = sine_wave_table; 
-    float *current_wave_table2 = saw_wave_table; 
-
-    float phase_inc = (WAVE_TABLE_LEN * FREQUENCY) / SAMPLE_RATE;
-    float phase_inc2 = (WAVE_TABLE_LEN * 200.0) / SAMPLE_RATE;
-
     uint32_t pos1 = 0;
-    uint32_t pos2 = 0;
-
-    envelope_t env1, env2;
-    init_envelope(&env1, 0.01f, 0.1f, 1.0f, 0.1f);
-    init_envelope(&env2, 0.01f, 0.1f, 1.0f, 0.1f); //ADSR
-
     filter_state_t filter_state1 = {0};
-    filter_state_t filter_state2 = {0}; 
 
-    struct audio_buffer *active_buffer = NULL;
-    struct audio_buffer *active_buffer2 = NULL;
+    //initialize voice struct
+    voice voice1 = {0};
+    voice1.wave_table = sine_wave_table;
+    voice1.pos = &pos1;
+    voice1.phase_inc = (WAVE_TABLE_LEN * FREQUENCY) / SAMPLE_RATE;
+    voice1.volume = 0.5;
+    init_envelope(&voice1.env, 0.01f, 0.1f, 1.0f, 0.1f); //ADSR
+    voice1.filter_state = &filter_state1;
+    voice1.is_active = false;
 
-    struct audio_buffer *buffer_1;
-    struct audio_buffer *buffer_2;
-    // struct audio_buffer *buffer_3;
+    uint32_t pos2 = 0;
+    filter_state_t filter_state2 = {0};
 
-    int num_voices = 0;
+    voice voice2 = {0};
+    voice2.wave_table = saw_wave_table;
+    voice2.pos = &pos2;
+    voice2.phase_inc = (WAVE_TABLE_LEN * 200.0) / SAMPLE_RATE;
+    voice2.volume = 0.5;
+    init_envelope(&voice2.env, 0.01f, 0.1f, 1.0f, 0.1f); //ADSR
+    voice2.filter_state = &filter_state2;
+    voice2.is_active = false;
+
+    voice *voices[2];
+    voices[0] = &voice1;
+    voices[1] = &voice2;
+
 
     float min_volume = 0.0f;
     float max_volume = 1.0f;    
     static float smoothed_volume = 0;
-
-    // float alpha = 0.1; // Smoothing factor (0 < alpha < 1)
 
     float min_cutoff = 0.0f;
     float max_cutoff = FREQUENCY;
@@ -162,97 +165,42 @@ int main() {
         float cutoff_freq = cutoff_freq_p * max_cutoff;
         init_lowpass(cutoff_freq, &ampin0, &ampin1, &ampin2, &ampout1, &ampout2);
 
-
-        if (active_buffer != NULL && env1.state == OFF) {
-            give_audio_buffer(audio_pool, active_buffer);
-            active_buffer = NULL;
-        }
         if (gpio_get(BUTTON_PIN_1) == 0) {
             gpio_put(LED_PIN, 1);
-            if (env1.state == OFF) {
-                env1.state = ATTACK;
+            if (voice1.env.state == OFF) {
+                voice1.env.state = ATTACK;
             }
-            struct audio_buffer *new_buffer = play(audio_pool, current_wave_table1, &pos1, phase_inc, volume, &env1, 
-     ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state1);
-            // give_audio_buffer(audio_pool, buffer_1);
-            if (new_buffer != NULL) {
-                if (active_buffer != NULL) {
-                    give_audio_buffer(audio_pool, active_buffer);
-                }
-                active_buffer = new_buffer;
-            }
-
+            voice1.is_active = true;
+            play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
         } else if (gpio_get(BUTTON_PIN_1) == 1) {
             gpio_put(LED_PIN, 0);
-            if (env1.state != OFF && env1.state != RELEASE) {
-                env1.state = RELEASE; 
+            if (voice1.env.state != OFF && voice1.env.state != RELEASE) {
+                voice1.env.state = RELEASE; 
             }
-            if (env1.state != OFF) {
-                struct audio_buffer *new_buffer = play(audio_pool, current_wave_table1, &pos1, phase_inc, volume, &env1, 
-     ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state1);
-            // give_audio_buffer(audio_pool, buffer_1);
-
-                if (new_buffer != NULL) {
-                    if (active_buffer != NULL) {
-                        give_audio_buffer(audio_pool, active_buffer);
-                    }
-                    active_buffer = new_buffer;
-                }
-
-
+            if (voice1.env.state != OFF) {
+                play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
+            } else {
+                voice1.is_active = false;
             }
-        }
-        if (active_buffer2 != NULL && env2.state == OFF) {
-            give_audio_buffer(audio_pool, active_buffer2);
-            active_buffer2 = NULL;
         }
         if (gpio_get(BUTTON_PIN_2) == 0) {
             gpio_put(LED_PIN, 1); 
-            if (env2.state == OFF) {
-                env2.state = ATTACK;
+            if (voice2.env.state == OFF) {
+                voice2.env.state = ATTACK;
             }
-            struct audio_buffer *new_buffer2 = play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
-     ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
-            // give_audio_buffer(audio_pool, buffer_2);
-            if (new_buffer2 != NULL) {
-                if (active_buffer2 != NULL) {
-                    give_audio_buffer(audio_pool, active_buffer2);
-                }
-                active_buffer2 = new_buffer2;
-            }
+            voice2.is_active = true;
+            play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
         } else if (gpio_get(BUTTON_PIN_2) == 1) {
             gpio_put(LED_PIN, 0);
-            if (env2.state != OFF && env2.state != RELEASE) {
-                env2.state = RELEASE; 
+            if (voice2.env.state != OFF && voice2.env.state != RELEASE) {
+                voice2.env.state = RELEASE; 
             }
-            if (env2.state != OFF) {
-                struct audio_buffer *new_buffer2 = play(audio_pool, current_wave_table2, &pos2, phase_inc2, volume, &env2,
-     ampin0, ampin1, ampin2, ampout1, ampout2, &filter_state2);
-                // give_audio_buffer(audio_pool, buffer_2);
-                if (new_buffer2 != NULL) {
-                    if (active_buffer2 != NULL) {
-                        give_audio_buffer(audio_pool, active_buffer2);
-                    }
-                    active_buffer2 = new_buffer2;
-            }
+            if (voice2.env.state != OFF) {
+                play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
+            } else {
+                voice2.is_active = false;
             }
         }
-
-        if (active_buffer != NULL) {
-            give_audio_buffer(audio_pool, active_buffer);
-            active_buffer = NULL;
-        }
-        if (active_buffer2 != NULL) {
-            give_audio_buffer(audio_pool, active_buffer2);
-            active_buffer2 = NULL;
-        }
-
-        // if (active_buffer != NULL && active_buffer2 != NULL) {
-            
-        // }
-
-
-
     }
 
     return 0;

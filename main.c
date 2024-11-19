@@ -16,8 +16,10 @@
 #define BUTTON_PIN_1 15
 #define BUTTON_PIN_2 14
 #define LED_PIN 25 
-#define FREQUENCY 60.0f
+#define FREQUENCY1 60.0f
+#define FREQUENCY2 240.0f
 
+// TODO: simultaneous button release causes clipping
 
 float ampin0, ampin1, ampin2, ampout1, ampout2;
 
@@ -107,9 +109,9 @@ int main() {
     voice voice1 = {0};
     voice1.wave_table = sine_wave_table;
     voice1.pos = &pos1;
-    voice1.phase_inc = (WAVE_TABLE_LEN * FREQUENCY) / SAMPLE_RATE;
+    voice1.phase_inc = (WAVE_TABLE_LEN * FREQUENCY1) / SAMPLE_RATE;
     voice1.volume = 0.5;
-    init_envelope(&voice1.env, 0.01f, 0.1f, 1.0f, 0.1f); //ADSR
+    init_envelope(&voice1.env, 0.01f, 0.1f, 1.0f, 0.5f); //ADSR
     voice1.filter_state = &filter_state1;
     voice1.is_active = false;
 
@@ -117,11 +119,11 @@ int main() {
     filter_state_t filter_state2 = {0};
 
     voice voice2 = {0};
-    voice2.wave_table = saw_wave_table;
+    voice2.wave_table = square_wave_table;
     voice2.pos = &pos2;
-    voice2.phase_inc = (WAVE_TABLE_LEN * 200.0) / SAMPLE_RATE;
-    voice2.volume = 0.5;
-    init_envelope(&voice2.env, 0.01f, 0.1f, 1.0f, 0.1f); //ADSR
+    voice2.phase_inc = (WAVE_TABLE_LEN * FREQUENCY2) / SAMPLE_RATE;
+    voice2.volume = 0.2;
+    init_envelope(&voice2.env, 0.01f, 0.1f, 1.0f, 0.3f); //ADSR
     voice2.filter_state = &filter_state2;
     voice2.is_active = false;
 
@@ -135,12 +137,11 @@ int main() {
     static float smoothed_volume = 0;
 
     float min_cutoff = 0.0f;
-    float max_cutoff = FREQUENCY;
+    float max_cutoff = FREQUENCY2;
 
     static float smoothed_cutoff = 0;
     float alpha = 0.1;
 
-    // float cutoff_freq = 200.0f;
     float volume = 0.5;
 
 
@@ -167,9 +168,9 @@ int main() {
 
         if (gpio_get(BUTTON_PIN_1) == 0) {
             gpio_put(LED_PIN, 1);
-            if (voice1.env.state == OFF) {
-                voice1.env.state = ATTACK;
-            }
+            // if (voice1.env.state == OFF) {
+            voice1.env.state = ATTACK;
+            // }
             voice1.is_active = true;
             play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
         } else if (gpio_get(BUTTON_PIN_1) == 1) {
@@ -185,9 +186,9 @@ int main() {
         }
         if (gpio_get(BUTTON_PIN_2) == 0) {
             gpio_put(LED_PIN, 1); 
-            if (voice2.env.state == OFF) {
-                voice2.env.state = ATTACK;
-            }
+            // if (voice2.env.state == OFF) {
+            voice2.env.state = ATTACK;
+            // }
             voice2.is_active = true;
             play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
         } else if (gpio_get(BUTTON_PIN_2) == 1) {

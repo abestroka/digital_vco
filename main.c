@@ -17,7 +17,7 @@
 #define BUTTON_PIN_2 14
 #define LED_PIN 25 
 #define FREQUENCY1 60.0f
-#define FREQUENCY2 240.0f
+#define FREQUENCY2 400.0f
 
 // TODO: simultaneous button release causes clipping
 
@@ -33,6 +33,15 @@ typedef struct {
     bool is_active;
 } voice;
 
+
+void apply_smoothing(int16_t *samples, int sample_count, float alpha) {
+    float smoothed = samples[0]; 
+
+    for (int i = 1; i < sample_count; i++) {
+        smoothed = alpha * samples[i] + (1 - alpha) * smoothed;
+        samples[i] = (int16_t)smoothed;
+    }
+}
 
 float read_cutoff() {
     adc_select_input(CUTOFF_ADC_CHANNEL);
@@ -66,6 +75,8 @@ void play(struct audio_buffer_pool *audio_pool, voice **voices, int num_voices,
                             ampin0, ampin1, ampin2, ampout1, ampout2, voices[v]->filter_state);
         }
     }
+
+    apply_smoothing(samples, buffer->max_sample_count, 0.1f);
 
     buffer->sample_count = buffer->max_sample_count;
     give_audio_buffer(audio_pool, buffer);
@@ -119,7 +130,7 @@ int main() {
     filter_state_t filter_state2 = {0};
 
     voice voice2 = {0};
-    voice2.wave_table = square_wave_table;
+    voice2.wave_table = white_noise_table;
     voice2.pos = &pos2;
     voice2.phase_inc = (WAVE_TABLE_LEN * FREQUENCY2) / SAMPLE_RATE;
     voice2.volume = 0.2;

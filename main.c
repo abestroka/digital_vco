@@ -1,9 +1,9 @@
 #include <stdio.h>
 #include "pico/stdlib.h"
-#include "i2s_audio.h"
-#include "oscillators.h"
-#include "envelope.h"
-#include "filters.h"
+#include "src/i2s_audio.h"
+#include "src/oscillators.h"
+#include "src/envelope.h"
+#include "src/filters.h"
 
 #include "hardware/adc.h"
 

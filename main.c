@@ -31,17 +31,9 @@ typedef struct {
     envelope_t env;
     filter_state_t *filter_state;
     bool is_active;
+    bool pressed;
 } voice;
 
-
-void apply_smoothing(int16_t *samples, int sample_count, float alpha) {
-    float smoothed = samples[0]; 
-
-    for (int i = 1; i < sample_count; i++) {
-        smoothed = alpha * samples[i] + (1 - alpha) * smoothed;
-        samples[i] = (int16_t)smoothed;
-    }
-}
 
 float read_cutoff() {
     adc_select_input(CUTOFF_ADC_CHANNEL);
@@ -56,6 +48,7 @@ float read_volume() {
     return (result / MAX_ADC_VALUE);  // 0 - 1
     sleep_ms(10);
 }
+
 
 void play(struct audio_buffer_pool *audio_pool, voice **voices, int num_voices, 
           float ampin0, float ampin1, float ampin2, float ampout1, float ampout2) {
@@ -76,7 +69,6 @@ void play(struct audio_buffer_pool *audio_pool, voice **voices, int num_voices,
         }
     }
 
-    apply_smoothing(samples, buffer->max_sample_count, 0.1f);
 
     buffer->sample_count = buffer->max_sample_count;
     give_audio_buffer(audio_pool, buffer);
@@ -122,9 +114,10 @@ int main() {
     voice1.pos = &pos1;
     voice1.phase_inc = (WAVE_TABLE_LEN * FREQUENCY1) / SAMPLE_RATE;
     voice1.volume = 0.5;
-    init_envelope(&voice1.env, 0.01f, 0.1f, 1.0f, 0.5f); //ADSR
+    init_envelope(&voice1.env, 1.01f, 0.1f, 0.5f, 0.5f); //ADSR
     voice1.filter_state = &filter_state1;
     voice1.is_active = false;
+    voice1.pressed = false;
 
     uint32_t pos2 = 0;
     filter_state_t filter_state2 = {0};
@@ -134,9 +127,10 @@ int main() {
     voice2.pos = &pos2;
     voice2.phase_inc = (WAVE_TABLE_LEN * FREQUENCY2) / SAMPLE_RATE;
     voice2.volume = 0.2;
-    init_envelope(&voice2.env, 0.01f, 0.1f, 1.0f, 0.3f); //ADSR
+    init_envelope(&voice2.env, 1.01f, 0.1f, 0.5f, 0.5f); //ADSR
     voice2.filter_state = &filter_state2;
     voice2.is_active = false;
+    voice2.pressed = false;
 
     voice *voices[2];
     voices[0] = &voice1;
@@ -178,41 +172,52 @@ int main() {
         init_lowpass(cutoff_freq, &ampin0, &ampin1, &ampin2, &ampout1, &ampout2);
 
         if (gpio_get(BUTTON_PIN_1) == 0) {
+            // printf("voice1\n");
             gpio_put(LED_PIN, 1);
-            // if (voice1.env.state == OFF) {
+            if (voice1.pressed==false) {
             voice1.env.state = ATTACK;
-            // }
+            voice1.pressed = true;
+            }
             voice1.is_active = true;
-            play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
+            // play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
         } else if (gpio_get(BUTTON_PIN_1) == 1) {
             gpio_put(LED_PIN, 0);
-            if (voice1.env.state != OFF && voice1.env.state != RELEASE) {
+            if (voice1.pressed == true) {
+                voice1.pressed = false;
                 voice1.env.state = RELEASE; 
             }
             if (voice1.env.state != OFF) {
-                play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
+                // play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
             } else {
                 voice1.is_active = false;
             }
         }
         if (gpio_get(BUTTON_PIN_2) == 0) {
             gpio_put(LED_PIN, 1); 
-            // if (voice2.env.state == OFF) {
+            // printf("voice2\n");
+            if (voice2.pressed==false) {
             voice2.env.state = ATTACK;
-            // }
+            voice2.pressed=true;
+            }
             voice2.is_active = true;
-            play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
+            // play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
         } else if (gpio_get(BUTTON_PIN_2) == 1) {
             gpio_put(LED_PIN, 0);
-            if (voice2.env.state != OFF && voice2.env.state != RELEASE) {
+            if (voice2.pressed == true) {
+                voice2.pressed = false;
                 voice2.env.state = RELEASE; 
             }
             if (voice2.env.state != OFF) {
-                play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
+                // play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
             } else {
                 voice2.is_active = false;
             }
         }
+        printf("Voice1 active: %d, Env state: %d\n", voice1.is_active, voice1.env.state);
+
+
+        play(audio_pool, voices, 2, ampin0, ampin1, ampin2, ampout1, ampout2);
+
     }
 
     return 0;
